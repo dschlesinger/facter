@@ -55,7 +55,8 @@ const config = {
 				sm: "calc(var(--radius) - 4px)"
 			},
 			fontFamily: {
-				sans: [...fontFamily.sans]
+				// 'display': ['"Cooper Hewitt Bold"', ...],
+				'sans': [...fontFamily.sans]
 			}
 		}
 	},

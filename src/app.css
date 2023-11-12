@@ -1,6 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+  font-family: "Cooper Hewitt Bold";
+  src: url("../static/CooperHewitt-Bold.otf");
+}
  
 @layer base {
   :root {
