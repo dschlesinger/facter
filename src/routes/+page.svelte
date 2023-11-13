@@ -43,6 +43,7 @@
     let toneValue = "";
 
     async function predict() {
+        jnu = 0;
         predicting = true;
         prediction = null;
         error = "";
@@ -134,6 +135,16 @@
         }
     }
 
+    let jnu:number = 0;
+
+    function inc(){
+        jnu = jnu+1
+    }
+
+    function jnum(){
+        return jnu
+    }
+
 </script>
 
 <div>
@@ -146,13 +157,14 @@
         </Tabs.List>
         <Tabs.Content value="url">
             <Input bind:value={linkURL} type="text" placeholder="URL" class="w-64 md:w-96 my-4"/>
+            <p class="pb-6">Enter a URL or text here (Can take up to a minute)</p>
         </Tabs.Content>
         <Tabs.Content value="text">
             <Textarea bind:value={articleContent} placeholder="Article Content" class="h-32 w-64 md:w-96 my-4"/>
+            <p class="pb-6">Enter text, faster but no cross referrals</p>
         </Tabs.Content>
     </Tabs.Root>
     
-    <p class="pb-6">Enter a URL or text here</p>
 
     {#if predicting}
     <Button disabled><Loader2 class="mr-2 h-4 w-4 animate-spin"></Loader2>Analyzing...</Button>
@@ -209,31 +221,33 @@
 
     <div class="w-full lg:w-1/2 min-h-[64] bg-[#000000] p-4 rounded-lg border-2 my-2 border-[#000000]">
         {#each {length: prediction.length} as _, i}
-        <div>
-            <div class="dropdown dropdown-hover dropdown-right">
-                <label tabindex="0">
+            <div class="z-50 dropdown dropdown-hover max-lg:dropdown-bottom lg:dropdown-right">
+                <label class="w-full" tabindex="0">
                     <div class="hover:underline" style="color: {sentence_score_color(sentence_scores[i])}">{ prediction[i] }</div>
                 </label>
-                <div tabindex="0" class="card compact dropdown-content z-50 shadow bg-base-100 rounded-box w-[128]">
+                <div tabindex="0" class="card compact dropdown-content bg-slate-800 rounded-xl w-64 lg:w-96">
                     <div class="card-body">
-                        <div class="flex justify-between space-x-4">
-                            <div class="space-y-1">
-                              <h4 class="text-sm font-semibold">Bias Score: {Math.round(sentence_scores[i]* 100)/100} - Tone Score: {Math.round(sentence_tones[i] * 100)/100}</h4>
+                        <div class="flex flex-col">
+                            
+                              <h2 class="text-sm font-semibold">Bias Score: {Math.round(sentence_scores[i]* 100)/100} - Tone Score: {Math.round(sentence_tones[i] * 100)/100}</h2>
                               {#if choice == "url" } <!--choice == "url" -->
-                              <p class="text-sm">Similar Articles Say</p>
-                              <div class="flex-col items-center pt-2 w-full">
-                                <div class=" w-full bg-red-300 grow h-full">
-                                    <div class="">{ similarParagraphs[i] } </div>
-                                    <div class="">{ similar_url[i] }</div>
-                                </div>
+                                <div class="w-full pt-2">
+                                    {#if sentence_scores[i] < -0.5}
+                                        <p class="text-sm border-b border-black">Similar Articles Say</p>
+                                        <div class=" border-b border-black">{ similarParagraphs[jnum()] } </div>
+                                        <div class="">{ similar_url[jnum()] }
+                                            <!-- {#each similar_url[jnum()] as hurl }
+                                                <a href="{ hurl }">{ hurl }</a>
+                                            {/each} -->
+                                        </div>
+                                        { inc() }
+                                    {/if}
                               </div>
                               {/if}
-                            </div>
                           </div>
                     </div>
                 </div>
             </div>
-        </div>
         {/each}
     </div>
 
