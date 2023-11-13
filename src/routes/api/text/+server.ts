@@ -1,14 +1,17 @@
 import type { RequestHandler } from './$types';
 
-export const POST: RequestHandler = (async ({request}) => {
-    const inputsPred = await request.json();
+import type { Config } from '@sveltejs/adapter-vercel';
+export const config: Config = {	runtime: 'edge',};
 
-    const response = await fetch('https://lexhack-api.denalischlesinger.com/predict/url/', {
+export const POST: RequestHandler = (async ({request}) => {
+    const theInputs = await request.json();
+
+    const response = await fetch('https://lexhack-api.denalischlesinger.com/analyze/text/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         }, 
-        body: JSON.stringify( inputsPred ),
+        body: JSON.stringify( theInputs ),
     });
 
     if (!response.ok) {

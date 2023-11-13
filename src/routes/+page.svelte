@@ -6,71 +6,241 @@
     import * as RadioGroup from "$lib/components/ui/radio-group";
     import { Label } from "$lib/components/ui/label";
 
+    import Progress from "$lib/components/ui/progress/progress.svelte";
+    
+    import { Result } from "postcss";
+
     import Background from "./Background.svelte";
-    import '../global.css';
     
     let url = true;
+
+    let choice = "url";
 
     let linkURL = "";
     let articleContent = "";
 
+    import { Loader2 } from "lucide-svelte";
+    import * as Tabs from "$lib/components/ui/tabs";
+    import * as Alert from "$lib/components/ui/alert";
+    import { AlertCircle } from "lucide-svelte";
 
     let predicting = false;
     let prediction: any = null;
+    let truth_score: number = 0;
+    let rating_color: string = "white";
+    let sentence_scores: any[] = [];
+    let title:string = "";
+    let tone_score:number = 0;
+    let sentence_tones:any[] = [];
+
+    let similarParagraphs:string[] = [];
+    let domain:string[] = [];
+    let similar_url:string[] = [];
+
+    let error = "";
+
+    let indicatorValue = "";
+    let toneValue = "";
+
     async function predict() {
         predicting = true;
-        let inputsPred = {
-            url: linkURL
+        prediction = null;
+        error = "";
+        indicatorValue = "";
+        let theResult: any = null;
+
+        if (choice == "url") {
+            let inputs = {
+                url: linkURL
+            }
+            const response = await fetch('/api/url/', {
+		    	method: 'POST',
+		    	headers: {
+		    		'Content-Type': 'application/json'
+		    	},
+		    	body: JSON.stringify( inputs ),
+		    });
+            theResult = await response.json();
+        } else if (choice == "text") {
+            let inputs = {
+                text: articleContent
+            }
+            const response = await fetch('/api/text/', {
+		    	method: 'POST',
+		    	headers: {
+		    		'Content-Type': 'application/json'
+		    	},
+		    	body: JSON.stringify( inputs ),
+		    });
+            theResult = await response.json();
+        } else {
+            return "Error";
         }
-        const response = await fetch('/api/', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify( inputsPred ),
-		});
-		let resultPred = await response.json();
-		resultPred = resultPred;
-		predicting = false;
-		prediction = resultPred;
+        console.log("here");
+        console.log(theResult);
+        if (theResult[1].length == 0) {
+            error = theResult[3];
+            console.log(error)
+            predicting = false;
+            return;
+        }
+        console.log(theResult);
+        truth_score = theResult[0]
+		prediction = theResult[1];
+        sentence_scores = theResult[2]
+        sentence_tones = theResult[3]
+        tone_score = theResult[4]
+        title = theResult[5]
+        similarParagraphs = theResult[6]
+        domain = theResult[7]
+        similar_url = theResult[8]
+
+        let toneNum = 100-Math.round((1-tone_score)/2*100)
+        toneValue = toneNum + "%";
+
+        let indicatorNum = 100-Math.round((1-truth_score)/2*100)
+        indicatorValue = indicatorNum + "%";
+        if (truth_score < -0.5){
+            rating_color = "red"
+        }
+        else if (truth_score < 0){
+            rating_color = "yellow"
+        }
+        else if (truth_score > 0.5){
+            rating_color = "green"
+        }
+        else {
+            rating_color = "lightGreen"
+        }
+        predicting = false;
+        console.log("Here")
+    }
+
+    function sentence_score_color(score:number) {
+
+        console.log(score)
+
+        if (score < -0.5) {
+            return "lightcoral"
+        }
+        else if (score < 0) {
+            return "yellow"
+        }
+        else if (score < 0.5) {
+            return "green"
+        }
+        else {
+            return "lightGreen"
+        }
     }
 
 </script>
 
-{#if predicting}
-Predicting...
+<div>
+    <h1 class="my-4">Tool that automatically analyzes news stories for bias and factually incorrect information <br> More text = more accurate</h1>
+
+    <Tabs.Root bind:value={choice} class="w-64 md:w-96">
+        <Tabs.List class="grid w-full grid-cols-2">
+          <Tabs.Trigger value="url">URL</Tabs.Trigger>
+          <Tabs.Trigger value="text">Text</Tabs.Trigger>
+        </Tabs.List>
+        <Tabs.Content value="url">
+            <Input bind:value={linkURL} type="text" placeholder="URL" class="w-64 md:w-96 my-4"/>
+        </Tabs.Content>
+        <Tabs.Content value="text">
+            <Textarea bind:value={articleContent} placeholder="Article Content" class="h-32 w-64 md:w-96 my-4"/>
+        </Tabs.Content>
+    </Tabs.Root>
+    
+    <p class="pb-6">Enter a URL or text here</p>
+
+    {#if predicting}
+    <Button disabled><Loader2 class="mr-2 h-4 w-4 animate-spin"></Loader2>Analyzing...</Button>
+    {:else}
+    <Button on:click={predict}>Analyze</Button>
+    {/if}
+</div>
+
+{#if error}
+        <Alert.Root class= "border-2 w-96 mt-6 bg-red-200" variant="destructive">
+            <AlertCircle class="h-4 w-4" />
+            <Alert.Title>Error</Alert.Title>
+            <Alert.Description>
+                {error}
+            </Alert.Description>
+        </Alert.Root>
 {/if}
 
-{#if prediction != null}
-    {prediction}
+{#if prediction}
+    <p class="pb-6 pt-3">A higher number means less bias.</p>
+    <div class="w-full xl:w-1/2 text-center">
+        Bias Score: {Math.round(truth_score * 100)/100}
+    </div>
+
+    <div class="w-full lg:w-1/2"><div style="margin-left: {indicatorValue}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </div></div>
+    <div class="flex flex-row w-full lg:w-1/2 rounded-lg border border-purple-950">
+        <div class="rounded-l-lg basis-1/4 bg-purple-800 border-2 border-[#000000]">&nbsp;</div>
+        <div class="basis-1/4 bg-purple-400 border-2 border-[#000000]">&nbsp;</div>
+        <div class="basis-1/4 bg-purple-200 border-2 border-[#000000]">&nbsp;</div>
+        <div class="rounded-r-lg basis-1/4 bg-white border-2 border-[#000000]">&nbsp;</div>
+    </div>
+
+    <div class="w-full xl:w-1/2 text-center  pt-4">
+        Tone Score: {Math.round(tone_score * 100)/100}
+    </div>
+
+    <div class="w-full lg:w-1/2"><div style="margin-left: {toneValue}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </div></div>
+    <div class="flex flex-row w-full lg:w-1/2 rounded-lg">
+        <div class="rounded-l-lg basis-1/4 bg-red-500 border-2 border-[#000000]">&nbsp;</div>
+        <div class="basis-1/4 bg-yellow-500 border-2 border-[#000000]">&nbsp;</div>
+        <div class="basis-1/4 bg-green-200 border-2 border-[#000000]">&nbsp;</div>
+        <div class="rounded-r-lg basis-1/4 bg-green-500 border-2 border-[#000000]">&nbsp;</div>
+    </div>
+    <!--
+    <Progress style="background-color:{rating_color};" value={1-truth_score} max={2} class="w-full md:w-1/2 my-4 rotate-180"/>
+    -->
+
+    <div class="w-full lg:w-1/2 text-xl text-center mt-4">Title:</div>
+    <div class="w-full lg:w-1/2 text-center underline">{ title }</div>
+
+    <div class="w-full lg:w-1/2 min-h-[64] bg-[#000000] p-4 rounded-lg border-2 my-2 border-[#000000]">
+        {#each {length: prediction.length} as _, i}
+        <div>
+            <div class="dropdown dropdown-hover dropdown-right">
+                <label tabindex="0">
+                    <div class="hover:underline" style="color: {sentence_score_color(sentence_scores[i])}">{ prediction[i] }</div>
+                </label>
+                <div tabindex="0" class="card compact dropdown-content z-50 shadow bg-base-100 rounded-box w-[128]">
+                    <div class="card-body">
+                        <div class="flex justify-between space-x-4">
+                            <div class="space-y-1">
+                              <h4 class="text-sm font-semibold">Bias Score: {Math.round(sentence_scores[i]* 100)/100} - Tone Score: {Math.round(sentence_tones[i] * 100)/100}</h4>
+                              {#if choice == "url" } <!--choice == "url" -->
+                              <p class="text-sm">Similar Articles Say</p>
+                              <div class="flex-col items-center pt-2 w-full">
+                                <div class=" w-full bg-red-300 grow h-full">
+                                    <div class="">{ similarParagraphs[i] } </div>
+                                    <div class="">{ similar_url[i] }</div>
+                                </div>
+                              </div>
+                              {/if}
+                            </div>
+                          </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {/each}
+    </div>
+
+{:else}
+    <p class="pt-6">See the result here!</p>
 {/if}
 
 <div>
-    Tool that analyzes news stroies for bias and factaully incorrect information
-    <RadioGroup.Root value="comfortable" class="my-4">
-        <div class="flex items-center space-x-2">
-          <RadioGroup.Item value="comfortable" id="r1" on:click={() => {url = true}}  />
-          <Label for="r1">URL</Label>
-        </div>
-        <div class="flex items-center space-x-2">
-          <RadioGroup.Item value="default" id="r2" on:click={() => {url = false}} />
-          <Label for="r2">Text</Label>
-        </div>
-        <RadioGroup.Input name="spacing" />
-    </RadioGroup.Root>
-
-    {#if url == true}
-    <h1>To test it out, enter a URL here</h1>
-
-    <Input bind:value={linkURL} type="text" placeholder="URL" class="w-96 my-4"/>
-    {:else}
-    <p>Or paste in text here</p>
-
-    <Textarea bind:value={articleContent} placeholder="Article Content" class="h-32 w-1/2 my-4"/>
-    {/if}
-    <Button on:click={predict}>Run</Button>
-
-    <!-- <Progress {value} max={100} class="w-[60%]" /> -->
+    <Background/>
 </div>
-
-<Background/>

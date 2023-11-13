@@ -1,3 +1,1 @@
-<div class="flex flex-row p-8 gap-8">
-    <p class="text-xl">Based Analysis</p>
-</div>
+<div class="text-6xl font-display p-8">Based Analysis</div>
