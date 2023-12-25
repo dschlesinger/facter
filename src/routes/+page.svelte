@@ -3,13 +3,6 @@
     import { Textarea } from "$lib/components/ui/textarea";
     import { Button } from "$lib/components/ui/button";
 
-    import * as RadioGroup from "$lib/components/ui/radio-group";
-    import { Label } from "$lib/components/ui/label";
-
-    import Progress from "$lib/components/ui/progress/progress.svelte";
-    
-    import { Result } from "postcss";
-
     import Background from "./Background.svelte";
     
     let url = true;
@@ -23,6 +16,7 @@
     import * as Tabs from "$lib/components/ui/tabs";
     import * as Alert from "$lib/components/ui/alert";
     import { AlertCircle } from "lucide-svelte";
+    import { Terminal } from "lucide-svelte";
 
     let predicting = false;
     let prediction: any = null;
@@ -54,38 +48,55 @@
             let inputs = {
                 url: linkURL
             }
-            const response = await fetch('/api/url/', {
-		    	method: 'POST',
-		    	headers: {
-		    		'Content-Type': 'application/json'
-		    	},
-		    	body: JSON.stringify( inputs ),
-		    });
-            theResult = await response.json();
+            try {
+                const response = await fetch('localhost:8000/url/', {
+		        	method: 'POST',
+		        	headers: {
+		        		'Content-Type': 'application/json'
+		        	},
+		        	body: JSON.stringify( inputs ),
+		        });
+                theResult = await response.json();
+            } catch (anError: any) {
+                error = anError.message;
+                predicting = false;
+                return;
+            }
         } else if (choice == "text") {
             let inputs = {
                 text: articleContent
             }
-            const response = await fetch('/api/text/', {
-		    	method: 'POST',
-		    	headers: {
-		    		'Content-Type': 'application/json'
-		    	},
-		    	body: JSON.stringify( inputs ),
-		    });
-            theResult = await response.json();
+            try {
+                const response = await fetch('localhost:8000/text/', {
+		    	    method: 'POST',
+		    	    headers: {
+		    	    	'Content-Type': 'application/json'
+		    	    },
+		    	    body: JSON.stringify( inputs ),
+		        });
+                theResult = await response.json();
+            } catch (anError: any) {
+                error = anError.message;
+                predicting = false;
+                return;
+            }
         } else {
             return "Error";
         }
-        console.log("here");
-        console.log(theResult);
-        if (theResult[1].length == 0) {
-            error = theResult[3];
-            console.log(error)
+        //console.log("here");
+        //console.log(theResult);
+        if(!theResult.ok) {
+            error = "Server Error";
             predicting = false;
             return;
         }
-        console.log(theResult);
+        if (theResult[1].length == 0) {
+            error = theResult[3];
+            //console.log(error)
+            predicting = false;
+            return;
+        }
+        //console.log(theResult);
         truth_score = theResult[0]
 		prediction = theResult[1];
         sentence_scores = theResult[2]
@@ -114,12 +125,12 @@
             rating_color = "lightGreen"
         }
         predicting = false;
-        console.log("Here")
+        //console.log("Here")
     }
 
     function sentence_score_color(score:number) {
 
-        console.log(score)
+        //console.log(score)
 
         if (score < -0.5) {
             return "lightcoral"
@@ -148,6 +159,14 @@
 </script>
 
 <div>
+    <Alert.Root class="w-96 mb-8">
+        <Terminal class="h-4 w-4" />
+        <Alert.Title>Notice</Alert.Title>
+        <Alert.Description>
+            We have shut down the server.
+        </Alert.Description>
+    </Alert.Root>
+
     <h1 class="my-4">Tool that automatically analyzes news stories for bias and factually incorrect information <br> More text = more accurate</h1>
 
     <Tabs.Root bind:value={choice} class="w-80 md:w-96">
