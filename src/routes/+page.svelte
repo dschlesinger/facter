@@ -159,7 +159,7 @@
 </script>
 
 <div>
-    <Alert.Root class="w-96 mb-8">
+    <Alert.Root class="w-80 md:w-96 mb-8">
         <Terminal class="h-4 w-4" />
         <Alert.Title>Notice</Alert.Title>
         <Alert.Description>
@@ -193,7 +193,7 @@
 </div>
 
 {#if error}
-        <Alert.Root class= "border-2 w-96 mt-6 bg-red-200" variant="destructive">
+        <Alert.Root class= "border-2 w-80 md:w-96 mt-6 bg-red-200" variant="destructive">
             <AlertCircle class="h-4 w-4" />
             <Alert.Title>Error</Alert.Title>
             <Alert.Description>
